@@ -1,0 +1,26 @@
+{
+  "name": "typescript-react-intl",
+  "version": "0.0.0",
+  "description": "Extracts string messages from TypeScript React components or ts files that use React Intl.",
+  "main": "lib/index.js",
+  "scripts": {
+    "start": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bang88/typescript-react-intl.git"
+  },
+  "files": [
+    "lib"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bang88/typescript-react-intl/issues"
+  },
+  "homepage": "https://github.com/bang88/typescript-react-intl#readme",
+  "dependencies": {
+    "typescript": "^2.0.10"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "lib/",
+    "sourceMap": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmitOnError": false,
+    "target": "es5",
+    "declaration": true,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "rootDir": "."
+  },
+  "include": [
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "lib"
+  ]
+}
