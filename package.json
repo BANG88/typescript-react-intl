@@ -4,7 +4,8 @@
   "description": "Extracts string messages from TypeScript React components or ts files that use React Intl.",
   "main": "lib/index.js",
   "scripts": {
-    "start": "tsc"
+    "start": "tsc",
+    "test": "ava --verbose"
   },
   "repository": {
     "type": "git",
@@ -22,5 +23,10 @@
   "homepage": "https://github.com/bang88/typescript-react-intl#readme",
   "dependencies": {
     "typescript": "^2.0.10"
+  },
+  "devDependencies": {
+    "@types/react": "^0.14.52",
+    "@types/react-intl": "^2.1.0",
+    "ava": "^0.17.0"
   }
 }
