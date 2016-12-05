@@ -1,7 +1,7 @@
 # typescript-react-intl 
-[![Build Status](https://travis-ci.org/bang88/typescript-react-intl.svg?branch=master)](https://travis-ci.org/bang88/typescript-react-intl)
 Extracts string messages from TypeScript React components or ts files that use React Intl.
 
+[![Build Status](https://travis-ci.org/bang88/typescript-react-intl.svg?branch=master)](https://travis-ci.org/bang88/typescript-react-intl)
 
 ## Usage
 
