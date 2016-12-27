@@ -89,7 +89,9 @@ function main(contents) {
 
     var res = elements.map(element => {
         var msg = {}
-        element.attributes.forEach((attr: any) => attr.name && (msg[attr.name.text] = attr.initializer.expression.text));
+        element.attributes.forEach(function (attr) { return attr.name && 
+            (attr.initializer.text  && (msg[attr.name.text] = attr.initializer.text)) || 
+            ((msg[attr.name.text] = attr.initializer.expression.text)); });
         return msg;
     });
 
