@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@types/react": "^0.14.52",
-    "@types/react-intl": "^2.1.0",
+    "@types/react-intl": "^2.2.2",
     "ava": "^0.17.0"
   }
 }

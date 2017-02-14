@@ -59,7 +59,8 @@ function findFirstJsxOpeningLikeElementWithName(node, tagName: string, dm?: bool
             // Is this a JsxElement with an identifier name?
             if (isJsxOpeningLike(node) && node.tagName.kind === ts.SyntaxKind.Identifier) {
                 // Does the tag name match what we're looking for?
-                if (node.tagName.text === tagName) {
+                const childTagName = node.tagName as any;
+                if (childTagName.text === tagName) {
                     res.push(node);
                 }
             }
