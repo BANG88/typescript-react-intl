@@ -14,8 +14,8 @@
   "files": [
     "lib"
   ],
-  "keywords": [],
-  "author": "",
+  "keywords": ["react intl typescript"],
+  "author": "bang88",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/bang88/typescript-react-intl/issues"
@@ -28,5 +28,6 @@
     "@types/react": "^0.14.52",
     "@types/react-intl": "^2.2.2",
     "ava": "^0.17.0"
-  }
+  },
+  "typings": "./lib/index.d.ts"
 }
