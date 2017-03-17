@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "start": "tsc -w",
-    "test": "ava --verbose -w"
+    "test": "ava --verbose"
   },
   "repository": {
     "type": "git",
