@@ -8,7 +8,7 @@ const lang = defineMessages({
     title: {
         id: 'app.title',
         defaultMessage: "Hello"
-    }
+    },
 })
 
 export default lang

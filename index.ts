@@ -75,26 +75,25 @@ function findFirstJsxOpeningLikeElementWithName(node, tagName: string, dm?: bool
  * Parse tsx files
  * 
  * @export
- * @param {any} contents
+ * @param {string} contents
  * @returns {array}
  */
-function main(contents) {
+function main(contents: string) {
     var sourceFile = ts.createSourceFile('file.ts', contents, ts.ScriptTarget.ES2015, /*setParentNodes */ false, ts.ScriptKind.TSX);
 
     var elements = findFirstJsxOpeningLikeElementWithName(sourceFile, 'FormattedMessage');
     var dm = findFirstJsxOpeningLikeElementWithName(sourceFile, 'defineMessages', true);
 
-    // if (!elements.length) {
-    //   console.log('No element found!')
-    // }
-
+    const emptyObject = o => JSON.stringify(o) === '{}'
     var res = elements.map(element => {
         var msg = {}
-        element.attributes.forEach(function (attr) { return attr.name && 
-            (attr.initializer.text  && (msg[attr.name.text] = attr.initializer.text)) || 
-            ((msg[attr.name.text] = attr.initializer.expression.text)); });
+        element.attributes.forEach((attr) => {
+            // found nothing
+            if (!attr.name || !attr.initializer) return
+            msg[attr.name.text] = attr.initializer.text || attr.initializer.expression.text
+        });
         return msg;
-    });
+    }).filter(r => !emptyObject(r))
 
     return res.concat(dm);
 }

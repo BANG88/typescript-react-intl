@@ -1,57 +1,67 @@
 /// <reference path="../node_modules/ava/types/generated.d.ts" />
-import test from 'ava';
-var p = require('../lib').default
+import test from "ava";
+var p = require("../lib").default;
 
-var fs = require('fs')
+var fs = require("fs");
 
-test('<FormattedMessage/>', t => {
+test("<FormattedMessage/>", t => {
+  var content = fs.readFileSync(__dirname + "/app/index.tsx");
 
-    var content = fs.readFileSync(__dirname + '/app/index.tsx')
+  var res = p(content.toString());
 
-    var res = p(content.toString())
+  var expected = [
+    {
+      id: "app",
+      defaultMessage: "the defualt message"
+    }
+  ];
 
-    var expected = [{
-        id: 'app',
-        defaultMessage: 'the defualt message'
-    }]
+  t.is(res.length, 1);
 
-    t.is(res.length, 1)
-
-    t.deepEqual(res, expected)
-
+  t.deepEqual(res, expected);
 });
 
-test('It should return empty Array when not found', async t => {
+test("It should return empty Array when not found", async t => {
+  var content = fs.readFileSync(__dirname + "/app/empty.tsx");
 
-    var content = fs.readFileSync(__dirname + '/app/empty.tsx')
+  var res = p(content.toString());
 
-    var res = p(content.toString())
+  var expected = [];
 
-    var expected = []
+  t.is(res.length, 0);
 
-    t.is(res.length, 0)
-
-    t.deepEqual(res, expected)
-
+  t.deepEqual(res, expected);
 });
 
+test("defineMessages() should only work with variable declaration", t => {
+  var content = fs.readFileSync(__dirname + "/app/defineMessages.ts");
 
-test('defineMessages() should only work with variable declaration', t => {
+  var res = p(content.toString());
 
-    var content = fs.readFileSync(__dirname + '/app/defineMessages.ts')
+  var expected = [
+    {
+      id: "intro.hello",
+      defaultMessage: "Hello world"
+    },
+    {
+      id: "app.title",
+      defaultMessage: "Hello"
+    }
+  ];
 
-    var res = p(content.toString())
+  t.is(res.length, 2);
 
-    var expected = [{
-        id: 'intro.hello',
-        defaultMessage: 'Hello world'
-    }, {
-        id: 'app.title',
-        defaultMessage: 'Hello'
-    }]
+  t.deepEqual(res, expected);
+});
 
+test("<FormattedMessage/> should work with StatelessComponent", t => {
+  var content = fs.readFileSync(__dirname + "/app/statelessComponent.tsx");
 
-    t.is(res.length, 2)
+  var res = p(content.toString());
 
-    t.deepEqual(res, expected)
-})
+  var expected = [{ id: "i.am.ok", defaultMessage: "yep" }];
+
+  t.is(res.length, 1);
+
+  t.deepEqual(res, expected);
+});

@@ -1,2 +1,2 @@
-declare function main(contents: any): {}[];
+declare function main(contents: string): {}[];
 export default main;

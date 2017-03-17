@@ -4,8 +4,8 @@
   "description": "Extracts string messages from TypeScript React components or ts files that use React Intl.",
   "main": "lib/index.js",
   "scripts": {
-    "start": "tsc",
-    "test": "ava --verbose"
+    "start": "tsc -w",
+    "test": "ava --verbose -w"
   },
   "repository": {
     "type": "git",
