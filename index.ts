@@ -45,6 +45,7 @@ function findFirstJsxOpeningLikeElementWithName(node, tagName: string, dm?: bool
             var nd = node.getNamedDeclarations();
             for (var key in nd) {
                 var element = nd[key];
+                if (!element && !element.length) continue
                 element.forEach(el => {
                     if (isDefineMessages(el, tagName)) {
                         if (el.initializer.kind === ts.SyntaxKind.CallExpression && el.initializer.arguments.length) {
