@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/bang88/typescript-react-intl#readme",
   "dependencies": {
-    "typescript": "2.0.10"
+    "typescript": "^2.2.2"
   },
   "devDependencies": {
     "@types/react": "^0.14.52",
