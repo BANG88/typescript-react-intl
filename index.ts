@@ -16,6 +16,7 @@ function findProps(node) {
             return undefined;
         }
         if (node.kind === ts.SyntaxKind.ObjectLiteralExpression) {
+
             node.properties.forEach(p => {
                 var props = {};
                 var prop = {};
@@ -43,9 +44,7 @@ function findFirstJsxOpeningLikeElementWithName(node, tagName: string, dm?: bool
         }
         if (dm && node.getNamedDeclarations) {
             var nd = node.getNamedDeclarations();
-            for (var key in nd) {
-                var element = nd[key];
-                if (!element && !element.length) continue
+            nd.forEach(element => {
                 element.forEach(el => {
                     if (isDefineMessages(el, tagName)) {
                         if (el.initializer.kind === ts.SyntaxKind.CallExpression && el.initializer.arguments.length) {
@@ -54,8 +53,8 @@ function findFirstJsxOpeningLikeElementWithName(node, tagName: string, dm?: bool
                             res = res.concat(props);
                         }
                     }
-                });
-            }
+                })
+            })
         } else {
             // Is this a JsxElement with an identifier name?
             if (isJsxOpeningLike(node) && node.tagName.kind === ts.SyntaxKind.Identifier) {
