@@ -13,10 +13,18 @@ test("<FormattedMessage/>", t => {
     {
       id: "app",
       defaultMessage: "the defualt message"
+    },
+    {
+      id: "expr",
+      defaultMessage: "a jsx expression"
     }
+    // {
+    //   id: "concat",
+    //   defaultMessage: "concatenated strings"
+    // }
   ];
 
-  t.is(res.length, 1);
+  t.is(res.length, 2);
 
   t.deepEqual(res, expected);
 });
