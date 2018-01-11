@@ -56,6 +56,14 @@ function findProps(node: ts.Node): LooseObject[] {
   return res;
 }
 
+function forAllVarDecls(node: ts.Node, cb: (el: ts.VariableDeclaration) => void) {
+  if (ts.isVariableDeclaration(node)) {
+    cb(node)
+  } else {
+    ts.forEachChild(node, n => forAllVarDecls(n, cb))
+  }
+}
+
 function findFirstJsxOpeningLikeElementWithName(
   node: ts.SourceFile,
   tagName: string,
@@ -70,22 +78,19 @@ function findFirstJsxOpeningLikeElementWithName(
     }
     if (dm && ts.isSourceFile(node)) {
       // getNamedDeclarations is not currently public
-      var nd = (node as any).getNamedDeclarations();
-      nd.forEach((element: ts.Declaration[], key: string) => {
-        element.forEach(el => {
-          if (isDefineMessages(el, tagName)) {
-            if (
-              ts.isCallExpression(el.initializer) &&
-              el.initializer.arguments.length
-            ) {
-              var nodeProps = el.initializer.arguments[0];
-              var props = findProps(nodeProps);
-              // props is an array of LooseObject
-              res = res.concat(props);
-            }
+      forAllVarDecls(node, (el: ts.Declaration) => {
+        if (isDefineMessages(el, tagName)) {
+          if (
+            ts.isCallExpression(el.initializer) &&
+            el.initializer.arguments.length
+          ) {
+            var nodeProps = el.initializer.arguments[0];
+            var props = findProps(nodeProps);
+            // props is an array of LooseObject
+            res = res.concat(props);
           }
-        });
-      });
+        }
+      })
     } else {
       // Is this a JsxElement with an identifier name?
       if (
