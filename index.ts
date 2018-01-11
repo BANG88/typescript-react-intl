@@ -1,4 +1,4 @@
-import * as ts from 'byots'
+import ts = require("typescript");
 
 function isDefineMessages(el: ts.Declaration, tagName: string): el is ts.VariableDeclaration {
   return (
@@ -69,7 +69,8 @@ function findFirstJsxOpeningLikeElementWithName(
       return undefined;
     }
     if (dm && ts.isSourceFile(node)) {
-      var nd = node.getNamedDeclarations();
+      // getNamedDeclarations is not currently public
+      var nd = (node as any).getNamedDeclarations();
       nd.forEach((element: ts.Declaration[], key: string) => {
         element.forEach(el => {
           if (isDefineMessages(el, tagName)) {
