@@ -11,4 +11,12 @@ const lang = defineMessages({
     },
 })
 
+// NB not a variable declaration; should be ignored
+defineMessages({
+    ignored: {
+        id: 'ignored.title',
+        defaultMessage: "Ignore me"
+    },
+})
+
 export default lang

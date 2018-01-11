@@ -1,35 +1,50 @@
 import ts = require("typescript");
 
-function isJsxOpeningLike(node: ts.Node): node is ts.JsxOpeningLikeElement {
+function isDefineMessages(el: ts.Declaration, tagName: string): el is ts.VariableDeclaration {
   return (
-    node.kind === ts.SyntaxKind.JsxOpeningElement ||
-    node.kind === ts.SyntaxKind.JsxSelfClosingElement
-  );
-}
-
-function isDefineMessages(el, tagName) {
-  return (
-    el.kind === ts.SyntaxKind.VariableDeclaration &&
+    ts.isVariableDeclaration(el) &&
     el.initializer &&
+    ts.isCallExpression(el.initializer) &&
     el.initializer.expression &&
+    ts.isIdentifier(el.initializer.expression) &&
     el.initializer.expression.text === tagName
   );
 }
 
-function findProps(node) {
-  var res = [];
+// Should be pretty fast: https://stackoverflow.com/a/34491287/14379
+function emptyObject(obj: any) {
+  for (var x in obj) {
+    return false;
+  }
+  return true;
+}
+
+interface LooseObject {
+  [key: string]: any
+}
+
+function findProps(node: ts.Node): LooseObject[] {
+  var res: LooseObject[] = [];
   find(node);
-  function find(node) {
+  function find(node: ts.Node): LooseObject[] {
     if (!node) {
       return undefined;
     }
-    if (node.kind === ts.SyntaxKind.ObjectLiteralExpression) {
+    if (ts.isObjectLiteralExpression(node)) {
       node.properties.forEach(p => {
-        var props = {};
-        var prop = {};
-        if (p.initializer.properties) {
+        var prop: LooseObject = {};
+        if (
+          ts.isPropertyAssignment(p) &&
+          ts.isObjectLiteralExpression(p.initializer) &&
+          p.initializer.properties
+        ) {
           p.initializer.properties.forEach(ip => {
-            prop[ip.name.text] = ip.initializer.text;
+            if (ts.isIdentifier(ip.name)) {
+              let name = ip.name.text
+              if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
+                prop[name] = ip.initializer.text;
+              }
+            }
           });
           res.push(prop);
         }
@@ -41,43 +56,51 @@ function findProps(node) {
   return res;
 }
 
+function forAllVarDecls(node: ts.Node, cb: (el: ts.VariableDeclaration) => void) {
+  if (ts.isVariableDeclaration(node)) {
+    cb(node)
+  } else {
+    ts.forEachChild(node, n => forAllVarDecls(n, cb))
+  }
+}
+
 function findFirstJsxOpeningLikeElementWithName(
-  node,
+  node: ts.SourceFile,
   tagName: string,
   dm?: boolean
 ) {
-  var res = [];
+  var res: LooseObject[] = [];
   find(node);
 
-  function find(node) {
+  function find(node: ts.Node | ts.SourceFile): undefined {
     if (!node) {
       return undefined;
     }
-    if (dm && node.getNamedDeclarations) {
-      var nd = node.getNamedDeclarations();
-      nd.forEach(element => {
-        element.forEach(el => {
-          if (isDefineMessages(el, tagName)) {
-            if (
-              el.initializer.kind === ts.SyntaxKind.CallExpression &&
-              el.initializer.arguments.length
-            ) {
-              var nodeProps = el.initializer.arguments[0];
-              var props = findProps(nodeProps);
-              res = res.concat(props);
-            }
+    if (dm && ts.isSourceFile(node)) {
+      // getNamedDeclarations is not currently public
+      forAllVarDecls(node, (el: ts.Declaration) => {
+        if (isDefineMessages(el, tagName)) {
+          if (
+            ts.isCallExpression(el.initializer) &&
+            el.initializer.arguments.length
+          ) {
+            var nodeProps = el.initializer.arguments[0];
+            var props = findProps(nodeProps);
+            // props is an array of LooseObject
+            res = res.concat(props);
           }
-        });
-      });
+        }
+      })
     } else {
       // Is this a JsxElement with an identifier name?
       if (
-        isJsxOpeningLike(node) &&
-        node.tagName.kind === ts.SyntaxKind.Identifier
+        ts.isJsxOpeningLikeElement(node) &&
+        ts.isIdentifier(node.tagName)
       ) {
         // Does the tag name match what we're looking for?
-        const childTagName = node.tagName as any;
+        const childTagName = node.tagName;
         if (childTagName.text === tagName) {
+          // node is a JsxOpeningLikeElement
           res.push(node);
         }
       }
@@ -95,7 +118,7 @@ function findFirstJsxOpeningLikeElementWithName(
  * @param {string} contents
  * @returns {array}
  */
-function main(contents: string) {
+function main(contents: string): {}[] {
   var sourceFile = ts.createSourceFile(
     "file.ts",
     contents,
@@ -114,13 +137,12 @@ function main(contents: string) {
     true
   );
 
-  const emptyObject = o => JSON.stringify(o) === "{}";
   var res = elements
     .map(element => {
-      var msg = {};
+      var msg: LooseObject = {};
       debugger;
       element.attributes &&
-        element.attributes.properties.forEach(attr => {
+        element.attributes.properties.forEach((attr: LooseObject) => {
           // found nothing
           if (!attr.name || !attr.initializer) return;
           msg[attr.name.text] =

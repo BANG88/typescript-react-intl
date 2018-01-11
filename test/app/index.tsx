@@ -7,6 +7,9 @@ export class App extends React.Component<any, any>{
         return <div>
             <FormattedMessage id="app" defaultMessage="the defualt message" />
             <FormattedMessage {...messages.intro} />
+            <FormattedMessage id="expr" defaultMessage={"a jsx expression"} />
+
+            {/* Not currently supported: <FormattedMessage id="concat" defaultMessage={"concatenated " + "strings"} /> */}
         </div>
     }
 }
