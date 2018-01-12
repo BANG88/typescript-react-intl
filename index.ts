@@ -23,7 +23,7 @@ interface LooseObject {
   [key: string]: any
 }
 
-function findProps(node: ts.Node): LooseObject[] {
+function findProps(node: ts.Node, tagName: string): LooseObject[] {
   var res: LooseObject[] = [];
   find(node);
   function find(node: ts.Node): LooseObject[] {
@@ -31,24 +31,38 @@ function findProps(node: ts.Node): LooseObject[] {
       return undefined;
     }
     if (ts.isObjectLiteralExpression(node)) {
-      node.properties.forEach(p => {
-        var prop: LooseObject = {};
-        if (
-          ts.isPropertyAssignment(p) &&
-          ts.isObjectLiteralExpression(p.initializer) &&
-          p.initializer.properties
-        ) {
-          p.initializer.properties.forEach(ip => {
-            if (ts.isIdentifier(ip.name)) {
-              let name = ip.name.text
-              if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
-                prop[name] = ip.initializer.text;
+        node.properties.forEach(p => {
+          var prop: LooseObject = {};
+          if (
+            ts.isPropertyAssignment(p) &&
+            ts.isObjectLiteralExpression(p.initializer) &&
+            p.initializer.properties
+          ) {
+            p.initializer.properties.forEach(ip => {
+              if (ts.isIdentifier(ip.name)) {
+                let name = ip.name.text
+                if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
+                  prop[name] = ip.initializer.text;
+                }
               }
+            });
+            res.push(prop);
+          }
+        });
+
+       if (tagName === "formatMessage") {
+          var prop: LooseObject = {};
+          let name;
+
+          node.properties.forEach(p => {
+          if (ts.isPropertyAssignment(p) && ts.isStringLiteral(p.initializer)) {
+              name = (p.name as any).escapedText;
+              prop[name] = p.initializer.text;
             }
           });
+          
           res.push(prop);
-        }
-      });
+      }
     }
     return ts.forEachChild(node, find);
   }
@@ -85,7 +99,7 @@ function findFirstJsxOpeningLikeElementWithName(
             el.initializer.arguments.length
           ) {
             var nodeProps = el.initializer.arguments[0];
-            var props = findProps(nodeProps);
+            var props = findProps(nodeProps, tagName);
             // props is an array of LooseObject
             res = res.concat(props);
           }
@@ -136,6 +150,11 @@ function main(contents: string): {}[] {
     "defineMessages",
     true
   );
+  var fm = findFirstJsxOpeningLikeElementWithName(
+    sourceFile,
+    "formatMessage",
+    true
+  );
 
   var res = elements
     .map(element => {
@@ -152,7 +171,7 @@ function main(contents: string): {}[] {
     })
     .filter(r => !emptyObject(r));
 
-  return res.concat(dm);
+  return res.concat(dm).concat(fm);
 }
 
 export default main;
