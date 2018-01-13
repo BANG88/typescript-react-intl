@@ -60,7 +60,7 @@ function findProps(node: ts.Node, tagName: string): LooseObject[] {
               prop[name] = p.initializer.text;
             }
           });
-          
+
           res.push(prop);
       }
     }
@@ -127,7 +127,7 @@ function findFirstJsxOpeningLikeElementWithName(
 }
 /**
  * Parse tsx files
- * 
+ *
  * @export
  * @param {string} contents
  * @returns {array}
@@ -159,7 +159,6 @@ function main(contents: string): {}[] {
   var res = elements
     .map(element => {
       var msg: LooseObject = {};
-      debugger;
       element.attributes &&
         element.attributes.properties.forEach((attr: LooseObject) => {
           // found nothing
