@@ -1,6 +1,6 @@
 {
   "name": "typescript-react-intl",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Extracts string messages from TypeScript React components or ts files that use React Intl.",
   "main": "lib/index.js",
   "scripts": {
