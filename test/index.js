@@ -73,3 +73,15 @@ test("<FormattedMessage/> should work with StatelessComponent", t => {
 
   t.deepEqual(res, expected);
 });
+
+test("formatMessage() API should work with a wrapped by injectIntl Component", t => {
+  var content = fs.readFileSync(__dirname + "/app/wrappedComponent.tsx");
+
+  var res = p(content.toString());
+
+  var expected = [{ id: "emailPlaceholder", defaultMessage: "Email" }];
+
+  t.is(res.length, 1);
+
+  t.deepEqual(res, expected);
+});
