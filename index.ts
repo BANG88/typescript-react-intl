@@ -23,14 +23,16 @@ interface LooseObject {
   [key: string]: any
 }
 
-function findProps(node: ts.Node, tagName: string): LooseObject[] {
+type MethodName = "formatMessage" | "defineMessages";
+
+function findProps(node: ts.Node, methodName: MethodName): LooseObject[] {
   var res: LooseObject[] = [];
-  find(node);
   function find(node: ts.Node): LooseObject[] {
     if (!node) {
       return undefined;
     }
     if (ts.isObjectLiteralExpression(node)) {
+      if (methodName === "defineMessages") {
         node.properties.forEach(p => {
           var prop: LooseObject = {};
           if (
@@ -49,8 +51,7 @@ function findProps(node: ts.Node, tagName: string): LooseObject[] {
             res.push(prop);
           }
         });
-
-       if (tagName === "formatMessage") {
+      } else if (methodName === "formatMessage") {
           var prop: LooseObject = {};
           node.properties.forEach(p => {
             if (
@@ -62,11 +63,13 @@ function findProps(node: ts.Node, tagName: string): LooseObject[] {
               }
             });
           res.push(prop);
+      } else {
+        throw "unexpected methodName: " + methodName
       }
     }
     return ts.forEachChild(node, find);
   }
-
+  find(node);
   return res;
 }
 
@@ -78,53 +81,52 @@ function forAllVarDecls(node: ts.Node, cb: (el: ts.VariableDeclaration) => void)
   }
 }
 
-function findFirstJsxOpeningLikeElementWithName(
+function findJsxOpeningLikeElementsWithName(
   node: ts.SourceFile,
-  tagName: string,
-  findMethodCall?: boolean
+  tagName: string
 ) {
-  var res: LooseObject[] = [];
-  find(node);
-
-  function find(node: ts.Node | ts.SourceFile): undefined {
-    if (!node) {
-      return undefined;
-    }
-    if (findMethodCall && ts.isSourceFile(node)) {
-      // getNamedDeclarations is not currently public
-      forAllVarDecls(node, (el: ts.Declaration) => {
-        if (isMethodCall(el, tagName)) {
-          if (
-            ts.isCallExpression(el.initializer) &&
-            el.initializer.arguments.length
-          ) {
-            var nodeProps = el.initializer.arguments[0];
-            var props = findProps(nodeProps, tagName);
-            // props is an array of LooseObject
-            res = res.concat(props);
-          }
-        }
-      })
-    } else {
-      // Is this a JsxElement with an identifier name?
-      if (
-        ts.isJsxOpeningLikeElement(node) &&
-        ts.isIdentifier(node.tagName)
-      ) {
-        // Does the tag name match what we're looking for?
-        const childTagName = node.tagName;
-        if (childTagName.text === tagName) {
-          // node is a JsxOpeningLikeElement
-          res.push(node);
-        }
+  let res: LooseObject[] = [];
+  function findJsxElement(node: ts.Node): undefined {
+    // Is this a JsxElement with an identifier name?
+    if (
+      ts.isJsxOpeningLikeElement(node) &&
+      ts.isIdentifier(node.tagName)
+    ) {
+      // Does the tag name match what we're looking for?
+      const childTagName = node.tagName;
+      if (childTagName.text === tagName) {
+        // node is a JsxOpeningLikeElement
+        res.push(node);
       }
     }
-
-    return ts.forEachChild(node, find);
+    return ts.forEachChild(node, findJsxElement);
   }
-
+  findJsxElement(node);
   return res;
 }
+
+function findMethodCallsWithName(
+  sourceFile: ts.SourceFile,
+  methodName: MethodName
+) {
+  let res: LooseObject[] = [];
+  // getNamedDeclarations is not currently public
+  forAllVarDecls(sourceFile, (el: ts.Declaration) => {
+    if (isMethodCall(el, methodName)) {
+      if (
+        ts.isCallExpression(el.initializer) &&
+        el.initializer.arguments.length
+      ) {
+        let nodeProps = el.initializer.arguments[0];
+        let props = findProps(nodeProps, methodName);
+        // props is an array of LooseObject
+        res = res.concat(props);
+      }
+    }
+  })
+  return res;
+}
+
 /**
  * Parse tsx files
  *
@@ -133,7 +135,7 @@ function findFirstJsxOpeningLikeElementWithName(
  * @returns {array}
  */
 function main(contents: string): {}[] {
-  var sourceFile = ts.createSourceFile(
+  let sourceFile = ts.createSourceFile(
     "file.ts",
     contents,
     ts.ScriptTarget.ES2015,
@@ -141,24 +143,22 @@ function main(contents: string): {}[] {
     ts.ScriptKind.TSX
   );
 
-  var elements = findFirstJsxOpeningLikeElementWithName(
+  let elements = findJsxOpeningLikeElementsWithName(
     sourceFile,
     "FormattedMessage"
   );
-  var dm = findFirstJsxOpeningLikeElementWithName(
+  let dm = findMethodCallsWithName(
     sourceFile,
-    "defineMessages",
-    true
+    "defineMessages"
   );
-  var fm = findFirstJsxOpeningLikeElementWithName(
+  let fm = findMethodCallsWithName(
     sourceFile,
-    "formatMessage",
-    true
+    "formatMessage"
   );
 
-  var res = elements
+  let res = elements
     .map(element => {
-      var msg: LooseObject = {};
+      let msg: LooseObject = {};
       element.attributes &&
         element.attributes.properties.forEach((attr: LooseObject) => {
           // found nothing
