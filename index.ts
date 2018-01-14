@@ -1,13 +1,13 @@
 import ts = require("typescript");
 
-function isDefineMessages(el: ts.Declaration, tagName: string): el is ts.VariableDeclaration {
+function isMethodCall(el: ts.Declaration, methodName: string): el is ts.VariableDeclaration {
   return (
     ts.isVariableDeclaration(el) &&
     el.initializer &&
     ts.isCallExpression(el.initializer) &&
     el.initializer.expression &&
     ts.isIdentifier(el.initializer.expression) &&
-    el.initializer.expression.text === tagName
+    el.initializer.expression.text === methodName
   );
 }
 
@@ -84,7 +84,7 @@ function forAllVarDecls(node: ts.Node, cb: (el: ts.VariableDeclaration) => void)
 function findFirstJsxOpeningLikeElementWithName(
   node: ts.SourceFile,
   tagName: string,
-  dm?: boolean
+  findMethodCall?: boolean
 ) {
   var res: LooseObject[] = [];
   find(node);
@@ -93,10 +93,10 @@ function findFirstJsxOpeningLikeElementWithName(
     if (!node) {
       return undefined;
     }
-    if (dm && ts.isSourceFile(node)) {
+    if (findMethodCall && ts.isSourceFile(node)) {
       // getNamedDeclarations is not currently public
       forAllVarDecls(node, (el: ts.Declaration) => {
-        if (isDefineMessages(el, tagName)) {
+        if (isMethodCall(el, tagName)) {
           if (
             ts.isCallExpression(el.initializer) &&
             el.initializer.arguments.length
