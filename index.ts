@@ -23,7 +23,44 @@ interface LooseObject {
   [key: string]: any
 }
 
-type MethodName = "formatMessage" | "defineMessages";
+type MethodName = "defineMessages" | "formatMessage";
+
+function findPropsForDefineMessages(node: ts.ObjectLiteralExpression): LooseObject[] {
+  var messages: LooseObject[] = [];
+  node.properties.forEach(p => {
+    var message: LooseObject = {};
+    if (
+      ts.isPropertyAssignment(p) &&
+      ts.isObjectLiteralExpression(p.initializer) &&
+      p.initializer.properties
+    ) {
+      p.initializer.properties.forEach(ip => {
+        if (ts.isIdentifier(ip.name)) {
+          let name = ip.name.text
+          if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
+            message[name] = ip.initializer.text;
+          }
+        }
+      });
+      messages.push(message);
+    }
+  });
+  return messages;
+}
+
+function findPropsForFormatMessage(node: ts.ObjectLiteralExpression): LooseObject[] {
+  var message: LooseObject = {};
+  node.properties.forEach(p => {
+    if (
+      ts.isPropertyAssignment(p) &&
+      (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
+      ts.isStringLiteral(p.initializer)
+    ) {
+        message[p.name.text] = p.initializer.text;
+      }
+    });
+  return [message];
+}
 
 function findProps(node: ts.Node, methodName: MethodName): LooseObject[] {
   var res: LooseObject[] = [];
@@ -33,41 +70,15 @@ function findProps(node: ts.Node, methodName: MethodName): LooseObject[] {
     }
     if (ts.isObjectLiteralExpression(node)) {
       if (methodName === "defineMessages") {
-        node.properties.forEach(p => {
-          var prop: LooseObject = {};
-          if (
-            ts.isPropertyAssignment(p) &&
-            ts.isObjectLiteralExpression(p.initializer) &&
-            p.initializer.properties
-          ) {
-            p.initializer.properties.forEach(ip => {
-              if (ts.isIdentifier(ip.name)) {
-                let name = ip.name.text
-                if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
-                  prop[name] = ip.initializer.text;
-                }
-              }
-            });
-            res.push(prop);
-          }
-        });
+        res.push(...findPropsForDefineMessages(node));
       } else if (methodName === "formatMessage") {
-          var prop: LooseObject = {};
-          node.properties.forEach(p => {
-            if (
-              ts.isPropertyAssignment(p) &&
-              (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
-              ts.isStringLiteral(p.initializer)
-            ) {
-                prop[p.name.text] = p.initializer.text;
-              }
-            });
-          res.push(prop);
+        res.push(...findPropsForFormatMessage(node));
       } else {
         throw "unexpected methodName: " + methodName
       }
+    } else {
+      return ts.forEachChild(node, find);
     }
-    return ts.forEachChild(node, find);
   }
   find(node);
   return res;
