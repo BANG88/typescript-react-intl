@@ -19,16 +19,19 @@ function emptyObject(obj: any) {
   return true;
 }
 
-interface LooseObject {
+// just a map of string to any
+interface Message {
   [key: string]: any
 }
 
+type ElementName = "FormattedMessage";
 type MethodName = "defineMessages" | "formatMessage";
+type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[]
 
-function findPropsForDefineMessages(node: ts.ObjectLiteralExpression): LooseObject[] {
-  var messages: LooseObject[] = [];
-  node.properties.forEach(p => {
-    var message: LooseObject = {};
+function extractMessagesForDefineMessages(objLiteral: ts.ObjectLiteralExpression): Message[] {
+  var messages: Message[] = [];
+  objLiteral.properties.forEach(p => {
+    var message: Message = {};
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
@@ -48,9 +51,9 @@ function findPropsForDefineMessages(node: ts.ObjectLiteralExpression): LooseObje
   return messages;
 }
 
-function findPropsForFormatMessage(node: ts.ObjectLiteralExpression): LooseObject[] {
-  var message: LooseObject = {};
-  node.properties.forEach(p => {
+function extractMessagesForFormatMessage(objLiteral: ts.ObjectLiteralExpression): Message[] {
+  var message: Message = {};
+  objLiteral.properties.forEach(p => {
     if (
       ts.isPropertyAssignment(p) &&
       (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
@@ -62,20 +65,11 @@ function findPropsForFormatMessage(node: ts.ObjectLiteralExpression): LooseObjec
   return [message];
 }
 
-function findProps(node: ts.Node, methodName: MethodName): LooseObject[] {
-  var res: LooseObject[] = [];
-  function find(node: ts.Node): LooseObject[] {
-    if (!node) {
-      return undefined;
-    }
+function extractMessagesForNode(node: ts.Node, extractMessages: MessageExtracter): Message[] {
+  var res: Message[] = [];
+  function find(node: ts.Node): Message[] {
     if (ts.isObjectLiteralExpression(node)) {
-      if (methodName === "defineMessages") {
-        res.push(...findPropsForDefineMessages(node));
-      } else if (methodName === "formatMessage") {
-        res.push(...findPropsForFormatMessage(node));
-      } else {
-        throw "unexpected methodName: " + methodName
-      }
+      res.push(...extractMessages(node));
     } else {
       return ts.forEachChild(node, find);
     }
@@ -84,7 +78,7 @@ function findProps(node: ts.Node, methodName: MethodName): LooseObject[] {
   return res;
 }
 
-function forAllVarDecls(node: ts.Node, cb: (el: ts.VariableDeclaration) => void) {
+function forAllVarDecls(node: ts.Node, cb: (decl: ts.VariableDeclaration) => void) {
   if (ts.isVariableDeclaration(node)) {
     cb(node)
   } else {
@@ -94,9 +88,9 @@ function forAllVarDecls(node: ts.Node, cb: (el: ts.VariableDeclaration) => void)
 
 function findJsxOpeningLikeElementsWithName(
   node: ts.SourceFile,
-  tagName: string
+  tagName: ElementName
 ) {
-  let res: LooseObject[] = [];
+  let messages: ts.JsxOpeningLikeElement[] = [];
   function findJsxElement(node: ts.Node): undefined {
     // Is this a JsxElement with an identifier name?
     if (
@@ -107,35 +101,35 @@ function findJsxOpeningLikeElementsWithName(
       const childTagName = node.tagName;
       if (childTagName.text === tagName) {
         // node is a JsxOpeningLikeElement
-        res.push(node);
+        messages.push(node);
       }
     }
     return ts.forEachChild(node, findJsxElement);
   }
   findJsxElement(node);
-  return res;
+  return messages;
 }
 
 function findMethodCallsWithName(
   sourceFile: ts.SourceFile,
-  methodName: MethodName
+  methodName: MethodName,
+  extractMessages: MessageExtracter
 ) {
-  let res: LooseObject[] = [];
+  let messages: Message[] = [];
   // getNamedDeclarations is not currently public
-  forAllVarDecls(sourceFile, (el: ts.Declaration) => {
-    if (isMethodCall(el, methodName)) {
+  forAllVarDecls(sourceFile, (decl: ts.Declaration) => {
+    if (isMethodCall(decl, methodName)) {
       if (
-        ts.isCallExpression(el.initializer) &&
-        el.initializer.arguments.length
+        ts.isCallExpression(decl.initializer) &&
+        decl.initializer.arguments.length
       ) {
-        let nodeProps = el.initializer.arguments[0];
-        let props = findProps(nodeProps, methodName);
-        // props is an array of LooseObject
-        res = res.concat(props);
+        let nodeProps = decl.initializer.arguments[0];
+        let declMessages = extractMessagesForNode(nodeProps, extractMessages);
+        messages = messages.concat(declMessages);
       }
     }
   })
-  return res;
+  return messages;
 }
 
 /**
@@ -160,18 +154,21 @@ function main(contents: string): {}[] {
   );
   let dm = findMethodCallsWithName(
     sourceFile,
-    "defineMessages"
+    "defineMessages",
+    extractMessagesForDefineMessages
   );
   let fm = findMethodCallsWithName(
     sourceFile,
-    "formatMessage"
+    "formatMessage",
+    extractMessagesForFormatMessage
   );
 
-  let res = elements
+  // convert JsxOpeningLikeElements to Message maps
+  let jsxMessages = elements
     .map(element => {
-      let msg: LooseObject = {};
+      let msg: Message = {};
       element.attributes &&
-        element.attributes.properties.forEach((attr: LooseObject) => {
+        element.attributes.properties.forEach((attr: Message) => {
           // found nothing
           if (!attr.name || !attr.initializer) return;
           msg[attr.name.text] =
@@ -181,7 +178,7 @@ function main(contents: string): {}[] {
     })
     .filter(r => !emptyObject(r));
 
-  return res.concat(dm).concat(fm);
+  return jsxMessages.concat(dm).concat(fm);
 }
 
 export default main;
