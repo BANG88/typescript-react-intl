@@ -5,6 +5,8 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noEmitOnError": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "target": "es5",
     "declaration": true,
     "noImplicitAny": true,

@@ -12,34 +12,37 @@ function isMethodCall(el: ts.Declaration, methodName: string): el is ts.Variable
 }
 
 // Should be pretty fast: https://stackoverflow.com/a/34491287/14379
+// tslint:disable-next-line:no-any
 function emptyObject(obj: any) {
-  for (var x in obj) {
-    return false;
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      return false;
+    }
   }
   return true;
 }
 
-// just a map of string to any
+// just a map of string to string
 interface Message {
-  [key: string]: any
+  [key: string]: string;
 }
 
 type ElementName = "FormattedMessage";
 type MethodName = "defineMessages" | "formatMessage";
-type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[]
+type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
 function extractMessagesForDefineMessages(objLiteral: ts.ObjectLiteralExpression): Message[] {
-  var messages: Message[] = [];
-  objLiteral.properties.forEach(p => {
-    var message: Message = {};
+  const messages: Message[] = [];
+  objLiteral.properties.forEach((p) => {
+    const message: Message = {};
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
       p.initializer.properties
     ) {
-      p.initializer.properties.forEach(ip => {
+      p.initializer.properties.forEach((ip) => {
         if (ts.isIdentifier(ip.name) || ts.isLiteralExpression(ip.name)) {
-          let name = ip.name.text
+          const name = ip.name.text;
           if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
             message[name] = ip.initializer.text;
           }
@@ -52,8 +55,8 @@ function extractMessagesForDefineMessages(objLiteral: ts.ObjectLiteralExpression
 }
 
 function extractMessagesForFormatMessage(objLiteral: ts.ObjectLiteralExpression): Message[] {
-  var message: Message = {};
-  objLiteral.properties.forEach(p => {
+  const message: Message = {};
+  objLiteral.properties.forEach((p) => {
     if (
       ts.isPropertyAssignment(p) &&
       (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
@@ -66,12 +69,12 @@ function extractMessagesForFormatMessage(objLiteral: ts.ObjectLiteralExpression)
 }
 
 function extractMessagesForNode(node: ts.Node, extractMessages: MessageExtracter): Message[] {
-  var res: Message[] = [];
-  function find(node: ts.Node): Message[] {
-    if (ts.isObjectLiteralExpression(node)) {
-      res.push(...extractMessages(node));
+  const res: Message[] = [];
+  function find(n: ts.Node): Message[] {
+    if (ts.isObjectLiteralExpression(n)) {
+      res.push(...extractMessages(n));
     } else {
-      return ts.forEachChild(node, find);
+      return ts.forEachChild(n, find);
     }
   }
   find(node);
@@ -80,31 +83,31 @@ function extractMessagesForNode(node: ts.Node, extractMessages: MessageExtracter
 
 function forAllVarDecls(node: ts.Node, cb: (decl: ts.VariableDeclaration) => void) {
   if (ts.isVariableDeclaration(node)) {
-    cb(node)
+    cb(node);
   } else {
-    ts.forEachChild(node, n => forAllVarDecls(n, cb))
+    ts.forEachChild(node, (n) => forAllVarDecls(n, cb));
   }
 }
 
 function findJsxOpeningLikeElementsWithName(
   node: ts.SourceFile,
-  tagName: ElementName
+  tagName: ElementName,
 ) {
-  let messages: ts.JsxOpeningLikeElement[] = [];
-  function findJsxElement(node: ts.Node): undefined {
+  const messages: ts.JsxOpeningLikeElement[] = [];
+  function findJsxElement(n: ts.Node): undefined {
     // Is this a JsxElement with an identifier name?
     if (
-      ts.isJsxOpeningLikeElement(node) &&
-      ts.isIdentifier(node.tagName)
+      ts.isJsxOpeningLikeElement(n) &&
+      ts.isIdentifier(n.tagName)
     ) {
       // Does the tag name match what we're looking for?
-      const childTagName = node.tagName;
+      const childTagName = n.tagName;
       if (childTagName.text === tagName) {
         // node is a JsxOpeningLikeElement
-        messages.push(node);
+        messages.push(n);
       }
     }
-    return ts.forEachChild(node, findJsxElement);
+    return ts.forEachChild(n, findJsxElement);
   }
   findJsxElement(node);
   return messages;
@@ -113,7 +116,7 @@ function findJsxOpeningLikeElementsWithName(
 function findMethodCallsWithName(
   sourceFile: ts.SourceFile,
   methodName: MethodName,
-  extractMessages: MessageExtracter
+  extractMessages: MessageExtracter,
 ) {
   let messages: Message[] = [];
   // getNamedDeclarations is not currently public
@@ -123,12 +126,12 @@ function findMethodCallsWithName(
         ts.isCallExpression(decl.initializer) &&
         decl.initializer.arguments.length
       ) {
-        let nodeProps = decl.initializer.arguments[0];
-        let declMessages = extractMessagesForNode(nodeProps, extractMessages);
+        const nodeProps = decl.initializer.arguments[0];
+        const declMessages = extractMessagesForNode(nodeProps, extractMessages);
         messages = messages.concat(declMessages);
       }
     }
-  })
+  });
   return messages;
 }
 
@@ -139,44 +142,48 @@ function findMethodCallsWithName(
  * @param {string} contents
  * @returns {array}
  */
+// TODO perhaps we should expose the Message interface
+// tslint:disable-next-line:array-type
 function main(contents: string): {}[] {
-  let sourceFile = ts.createSourceFile(
+  const sourceFile = ts.createSourceFile(
     "file.ts",
     contents,
     ts.ScriptTarget.ES2015,
     /*setParentNodes */ false,
-    ts.ScriptKind.TSX
+    ts.ScriptKind.TSX,
   );
 
-  let elements = findJsxOpeningLikeElementsWithName(
+  const elements = findJsxOpeningLikeElementsWithName(
     sourceFile,
-    "FormattedMessage"
+    "FormattedMessage",
   );
-  let dm = findMethodCallsWithName(
+  const dm = findMethodCallsWithName(
     sourceFile,
     "defineMessages",
-    extractMessagesForDefineMessages
+    extractMessagesForDefineMessages,
   );
-  let fm = findMethodCallsWithName(
+  const fm = findMethodCallsWithName(
     sourceFile,
     "formatMessage",
-    extractMessagesForFormatMessage
+    extractMessagesForFormatMessage,
   );
 
   // convert JsxOpeningLikeElements to Message maps
-  let jsxMessages = elements
-    .map(element => {
-      let msg: Message = {};
+  const jsxMessages = elements
+    .map((element) => {
+      const msg: Message = {};
       element.attributes &&
-        element.attributes.properties.forEach((attr: Message) => {
+        element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
           // found nothing
-          if (!attr.name || !attr.initializer) return;
-          msg[attr.name.text] =
-            attr.initializer.text || attr.initializer.expression.text;
+          // tslint:disable-next-line:no-any
+          const a = attr as any; // TODO find correct types to avoid "any"
+          if (!a.name || !a.initializer) { return; }
+          msg[a.name.text] =
+            a.initializer.text || a.initializer.expression.text;
         });
       return msg;
     })
-    .filter(r => !emptyObject(r));
+    .filter((r) => !emptyObject(r));
 
   return jsxMessages.concat(dm).concat(fm);
 }
