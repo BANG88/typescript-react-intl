@@ -1,6 +1,9 @@
 import ts = require("typescript");
 
-function isMethodCall(el: ts.Declaration, methodName: string): el is ts.VariableDeclaration {
+function isMethodCall(
+  el: ts.Declaration,
+  methodName: string,
+): el is ts.VariableDeclaration {
   return (
     ts.isVariableDeclaration(el) &&
     el.initializer &&
@@ -31,7 +34,9 @@ type ElementName = "FormattedMessage";
 type MethodName = "defineMessages" | "formatMessage";
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
-function extractMessagesForDefineMessages(objLiteral: ts.ObjectLiteralExpression): Message[] {
+function extractMessagesForDefineMessages(
+  objLiteral: ts.ObjectLiteralExpression,
+): Message[] {
   const messages: Message[] = [];
   objLiteral.properties.forEach((p) => {
     const message: Message = {};
@@ -43,7 +48,10 @@ function extractMessagesForDefineMessages(objLiteral: ts.ObjectLiteralExpression
       p.initializer.properties.forEach((ip) => {
         if (ts.isIdentifier(ip.name) || ts.isLiteralExpression(ip.name)) {
           const name = ip.name.text;
-          if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
+          if (
+            ts.isPropertyAssignment(ip) &&
+            ts.isStringLiteral(ip.initializer)
+          ) {
             message[name] = ip.initializer.text;
           }
         }
@@ -54,7 +62,9 @@ function extractMessagesForDefineMessages(objLiteral: ts.ObjectLiteralExpression
   return messages;
 }
 
-function extractMessagesForFormatMessage(objLiteral: ts.ObjectLiteralExpression): Message[] {
+function extractMessagesForFormatMessage(
+  objLiteral: ts.ObjectLiteralExpression,
+): Message[] {
   const message: Message = {};
   objLiteral.properties.forEach((p) => {
     if (
@@ -62,13 +72,16 @@ function extractMessagesForFormatMessage(objLiteral: ts.ObjectLiteralExpression)
       (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
       ts.isStringLiteral(p.initializer)
     ) {
-        message[p.name.text] = p.initializer.text;
-      }
-    });
+      message[p.name.text] = p.initializer.text;
+    }
+  });
   return [message];
 }
 
-function extractMessagesForNode(node: ts.Node, extractMessages: MessageExtracter): Message[] {
+function extractMessagesForNode(
+  node: ts.Node,
+  extractMessages: MessageExtracter,
+): Message[] {
   const res: Message[] = [];
   function find(n: ts.Node): Message[] {
     if (ts.isObjectLiteralExpression(n)) {
@@ -81,7 +94,10 @@ function extractMessagesForNode(node: ts.Node, extractMessages: MessageExtracter
   return res;
 }
 
-function forAllVarDecls(node: ts.Node, cb: (decl: ts.VariableDeclaration) => void) {
+function forAllVarDecls(
+  node: ts.Node,
+  cb: (decl: ts.VariableDeclaration) => void,
+) {
   if (ts.isVariableDeclaration(node)) {
     cb(node);
   } else {
@@ -96,10 +112,7 @@ function findJsxOpeningLikeElementsWithName(
   const messages: ts.JsxOpeningLikeElement[] = [];
   function findJsxElement(n: ts.Node): undefined {
     // Is this a JsxElement with an identifier name?
-    if (
-      ts.isJsxOpeningLikeElement(n) &&
-      ts.isIdentifier(n.tagName)
-    ) {
+    if (ts.isJsxOpeningLikeElement(n) && ts.isIdentifier(n.tagName)) {
       // Does the tag name match what we're looking for?
       const childTagName = n.tagName;
       if (childTagName.text === tagName) {
@@ -137,7 +150,6 @@ function findMethodCallsWithName(
 
 /**
  * Parse tsx files
- *
  * @export
  * @param {string} contents
  * @returns {array}
@@ -177,7 +189,9 @@ function main(contents: string): {}[] {
           // found nothing
           // tslint:disable-next-line:no-any
           const a = attr as any; // TODO find correct types to avoid "any"
-          if (!a.name || !a.initializer) { return; }
+          if (!a.name || !a.initializer) {
+            return;
+          }
           msg[a.name.text] =
             a.initializer.text || a.initializer.expression.text;
         });

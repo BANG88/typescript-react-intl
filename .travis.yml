@@ -1,4 +1,11 @@
+cache: yarn
 language: node_js
 node_js:
   - "6"
-  
+script:
+  - yarn build-ci
+  # Ideally we wouldn't commit transpiled .js or .js.map files, but for now:
+  - if ! git diff --exit-code --name-only HEAD; then
+      echo "Changed files detected (listed above). Please run 'yarn build' before you commit.";
+      exit 1;
+    fi
