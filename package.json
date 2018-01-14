@@ -4,7 +4,7 @@
   "description": "Extracts string messages from TypeScript React components or ts files that use React Intl.",
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc && yarn run format:auto && yarn run _test",
+    "build": "yarn run format:auto && tsc && yarn run _test",
     "build-ci": "tsc && yarn run format:check && yarn run _test",
     "format:auto": "prettier --config .prettierrc *.ts --write",
     "format:check": "prettier --config .prettierrc *.ts --list-different",
