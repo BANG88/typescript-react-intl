@@ -24,12 +24,12 @@
   },
   "homepage": "https://github.com/bang88/typescript-react-intl#readme",
   "dependencies": {
-    "tslint": "^5.9.1",
     "typescript": "^2.6.2"
   },
   "devDependencies": {
     "@types/react": "^15.0.27",
     "@types/react-intl": "^2.2.9",
-    "ava": "^0.19.1"
+    "ava": "^0.19.1",
+    "tslint": "^5.9.1"
   }
 }
