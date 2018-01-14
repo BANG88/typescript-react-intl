@@ -36,6 +36,7 @@
     "@types/react-intl": "^2.2.9",
     "ava": "^0.19.1",
     "prettier": "1.10.2",
-    "tslint": "^5.9.1"
+    "tslint": "^5.9.1",
+    "tslint-config-prettier": "^1.6.0"
   }
 }
