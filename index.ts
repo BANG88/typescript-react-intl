@@ -150,7 +150,6 @@ function findMethodCallsWithName(
 
 /**
  * Parse tsx files
- *
  * @export
  * @param {string} contents
  * @returns {array}
