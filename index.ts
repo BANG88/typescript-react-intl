@@ -38,7 +38,7 @@ function extractMessagesForDefineMessages(objLiteral: ts.ObjectLiteralExpression
       p.initializer.properties
     ) {
       p.initializer.properties.forEach(ip => {
-        if (ts.isIdentifier(ip.name)) {
+        if (ts.isIdentifier(ip.name) || ts.isLiteralExpression(ip.name)) {
           let name = ip.name.text
           if (ts.isPropertyAssignment(ip) && ts.isStringLiteral(ip.initializer)) {
             message[name] = ip.initializer.text;

@@ -5,9 +5,9 @@ const lang = defineMessages({
         id: 'intro.hello',
         defaultMessage: "Hello world"
     },
-    title: {
-        id: 'app.title',
-        defaultMessage: "Hello"
+    "title": {
+        "id": 'app.title',
+        "defaultMessage": "Hello"
     },
 })
 
