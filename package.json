@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "start": "tsc -w",
-    "test": "tsc && tslint -c tslint.json '*.ts' && ava --verbose"
+    "test": "tsc && tslint -c tslint.yaml '*.ts' && ava --verbose"
   },
   "repository": {
     "type": "git",
