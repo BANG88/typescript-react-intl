@@ -1,4 +1,4 @@
-{
+module.exports = {
     "defaultSeverity": "error",
     "extends": [
         "tslint:recommended"
