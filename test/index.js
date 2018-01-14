@@ -79,9 +79,12 @@ test("formatMessage() API should work with a wrapped by injectIntl Component", t
 
   var res = p(content.toString());
 
-  var expected = [{ id: "emailPlaceholder", defaultMessage: "Email" }];
+  var expected = [
+    { id: "emailPlaceholder", defaultMessage: "Email" },
+    { id: "anotherPlaceholder", defaultMessage: "Name" }
+  ];
 
-  t.is(res.length, 1);
+  t.is(res.length, 2);
 
   t.deepEqual(res, expected);
 });

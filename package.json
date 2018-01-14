@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "start": "tsc -w",
-    "test": "ava --verbose"
+    "test": "tsc && tslint -c tslint.json '*.ts' && ava --verbose"
   },
   "repository": {
     "type": "git",
@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/bang88/typescript-react-intl#readme",
   "dependencies": {
+    "tslint": "^5.9.1",
     "typescript": "^2.6.2"
   },
   "devDependencies": {

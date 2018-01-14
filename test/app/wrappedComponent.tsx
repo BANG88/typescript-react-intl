@@ -11,6 +11,11 @@ class WrappedComponent extends React.Component<any, any>{
             defaultMessage: "Email"
         });
 
+        const formatMessageWithStringKeys = formatMessage({
+            "id": "anotherPlaceholder",
+            "defaultMessage": "Name"
+        });
+
         return <div>
             <input type="text" placeholder={emailPlaceholder} />
         </div>
