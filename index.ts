@@ -52,8 +52,6 @@ function findProps(node: ts.Node, tagName: string): LooseObject[] {
 
        if (tagName === "formatMessage") {
           var prop: LooseObject = {};
-          let name;
-
           node.properties.forEach(p => {
             if (
               ts.isPropertyAssignment(p) &&
@@ -63,7 +61,6 @@ function findProps(node: ts.Node, tagName: string): LooseObject[] {
                 prop[p.name.text] = p.initializer.text;
               }
             });
-
           res.push(prop);
       }
     }
