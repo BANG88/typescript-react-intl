@@ -4,8 +4,13 @@
   "description": "Extracts string messages from TypeScript React components or ts files that use React Intl.",
   "main": "lib/index.js",
   "scripts": {
+    "build": "tsc && yarn run format:auto && yarn run _test",
+    "build-ci": "tsc && yarn run format:check && yarn run _test",
+    "format:auto": "prettier --config .prettierrc *.ts --write",
+    "format:check": "prettier --config .prettierrc *.ts --list-different",
     "start": "tsc -w",
-    "test": "tsc && tslint -c tslint.json '*.ts' && ava --verbose"
+    "test": "tsc && yarn run _test && echo Please run 'yarn build' before you commit",
+    "_test": "tslint -c tslint.json '*.ts' && ava --verbose"
   },
   "repository": {
     "type": "git",
@@ -30,6 +35,7 @@
     "@types/react": "^15.0.27",
     "@types/react-intl": "^2.2.9",
     "ava": "^0.19.1",
+    "prettier": "1.10.2",
     "tslint": "^5.9.1"
   }
 }

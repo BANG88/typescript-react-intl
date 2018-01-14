@@ -1,4 +1,6 @@
+cache: yarn
 language: node_js
 node_js:
   - "6"
-  
+script:
+  - "yarn build-ci"
