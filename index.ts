@@ -55,11 +55,14 @@ function findProps(node: ts.Node, tagName: string): LooseObject[] {
           let name;
 
           node.properties.forEach(p => {
-          if (ts.isPropertyAssignment(p) && ts.isStringLiteral(p.initializer)) {
-              name = (p.name as any).escapedText;
-              prop[name] = p.initializer.text;
-            }
-          });
+            if (
+              ts.isPropertyAssignment(p) &&
+              (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
+              ts.isStringLiteral(p.initializer)
+            ) {
+                prop[p.name.text] = p.initializer.text;
+              }
+            });
 
           res.push(prop);
       }
