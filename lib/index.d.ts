@@ -2,10 +2,9 @@
  * Represents a react-intl message descriptor
  */
 export interface Message {
-    id: string;
     defaultMessage: string;
     description?: string;
-    [key: string]: string | undefined;
+    id: string;
 }
 /**
  * Parse tsx files

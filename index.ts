@@ -18,10 +18,9 @@ function isMethodCall(
  * Represents a react-intl message descriptor
  */
 export interface Message {
-  id: string;
   defaultMessage: string;
   description?: string;
-  [key: string]: string | undefined; // for any other properties
+  id: string;
 }
 
 interface StringMap {
@@ -32,8 +31,19 @@ type ElementName = "FormattedMessage";
 type MethodName = "defineMessages" | "formatMessage";
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
-function validMessage(obj: StringMap): obj is Message {
-  return !!(obj.id && obj.defaultMessage);
+function toMessage(obj: StringMap): Message | null {
+  if (obj.id && obj.defaultMessage) {
+    const res = {
+      defaultMessage: obj.defaultMessage,
+      id: obj.id,
+    } as Message;
+    if (obj.description) {
+      res.description = obj.description;
+    }
+    return res;
+  } else {
+    return null;
+  }
 }
 
 function newMap(): StringMap {
@@ -45,7 +55,7 @@ function extractMessagesForDefineMessages(
 ): Message[] {
   const messages: Message[] = [];
   objLiteral.properties.forEach((p) => {
-    const message = newMap();
+    const map = newMap();
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
@@ -61,13 +71,14 @@ function extractMessagesForDefineMessages(
             ts.isPropertyAssignment(ip) &&
             ts.isStringLiteral(ip.initializer)
           ) {
-            message[name] = ip.initializer.text;
+            map[name] = ip.initializer.text;
           }
           // else: key/value is not a string literal/identifier
         }
       });
-      if (validMessage(message)) {
-        messages.push(message);
+      const msg = toMessage(map);
+      if (msg) {
+        messages.push(msg);
       }
     }
   });
@@ -77,19 +88,20 @@ function extractMessagesForDefineMessages(
 function extractMessagesForFormatMessage(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
-  const message = newMap();
+  const map = newMap();
   objLiteral.properties.forEach((p) => {
     if (
       ts.isPropertyAssignment(p) &&
       (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
       ts.isStringLiteral(p.initializer)
     ) {
-      message[p.name.text] = p.initializer.text;
+      map[p.name.text] = p.initializer.text;
     }
     // else: key/value is not a string literal/identifier
   });
-  if (validMessage(message)) {
-    return [message];
+  const msg = toMessage(map);
+  if (msg) {
+    return [msg];
   } else {
     return [];
   }
@@ -210,7 +222,7 @@ function main(contents: string): Message[] {
             a.initializer.text || a.initializer.expression.text;
         });
       }
-      return validMessage(msg) ? msg : null;
+      return toMessage(msg);
     })
     .filter(notNull);
 
