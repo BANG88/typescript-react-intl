@@ -14,32 +14,35 @@ function isMethodCall(
   );
 }
 
-// Should be pretty fast: https://stackoverflow.com/a/34491287/14379
-// tslint:disable-next-line:no-any
-function emptyObject(obj: any) {
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// just a map of string to string
+/**
+ * Represents a react-intl message descriptor
+ */
 interface Message {
-  [key: string]: string;
+  id: string;
+  defaultMessage: string;
+  description?: string;
+  [key: string]: string; // for any other properties
 }
 
 type ElementName = "FormattedMessage";
 type MethodName = "defineMessages" | "formatMessage";
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
+// tslint:disable-next-line:no-any
+function isMessage(obj: any): obj is Message {
+  return obj.id && obj.defaultMessage;
+}
+
+function newMap() {
+  return Object.create(null);
+}
+
 function extractMessagesForDefineMessages(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
   const messages: Message[] = [];
   objLiteral.properties.forEach((p) => {
-    const message: Message = {};
+    const message = newMap();
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
@@ -56,7 +59,9 @@ function extractMessagesForDefineMessages(
           }
         }
       });
-      messages.push(message);
+      if (isMessage(message)) {
+        messages.push(message);
+      }
     }
   });
   return messages;
@@ -65,7 +70,7 @@ function extractMessagesForDefineMessages(
 function extractMessagesForFormatMessage(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
-  const message: Message = {};
+  const message = newMap();
   objLiteral.properties.forEach((p) => {
     if (
       ts.isPropertyAssignment(p) &&
@@ -75,7 +80,11 @@ function extractMessagesForFormatMessage(
       message[p.name.text] = p.initializer.text;
     }
   });
-  return [message];
+  if (isMessage(message)) {
+    return [message];
+  } else {
+    return [];
+  }
 }
 
 function extractMessagesForNode(
@@ -183,7 +192,7 @@ function main(contents: string): {}[] {
   // convert JsxOpeningLikeElements to Message maps
   const jsxMessages = elements
     .map((element) => {
-      const msg: Message = {};
+      const msg = newMap();
       element.attributes &&
         element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
           // found nothing
@@ -195,11 +204,15 @@ function main(contents: string): {}[] {
           msg[a.name.text] =
             a.initializer.text || a.initializer.expression.text;
         });
-      return msg;
+      return isMessage(msg) ? msg : null;
     })
-    .filter((r) => !emptyObject(r));
+    .filter(notNull);
 
   return jsxMessages.concat(dm).concat(fm);
+}
+
+function notNull<T>(value: T | null): value is T {
+  return value !== null;
 }
 
 export default main;
