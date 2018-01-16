@@ -6,7 +6,7 @@ function isMethodCall(
 ): el is ts.VariableDeclaration {
   return (
     ts.isVariableDeclaration(el) &&
-    el.initializer &&
+    !!el.initializer &&
     ts.isCallExpression(el.initializer) &&
     el.initializer.expression &&
     ts.isIdentifier(el.initializer.expression) &&
@@ -17,23 +17,26 @@ function isMethodCall(
 /**
  * Represents a react-intl message descriptor
  */
-interface Message {
+export interface Message {
   id: string;
   defaultMessage: string;
   description?: string;
-  [key: string]: string; // for any other properties
+  [key: string]: string | undefined; // for any other properties
+}
+
+interface StringMap {
+  [key: string]: string | undefined;
 }
 
 type ElementName = "FormattedMessage";
 type MethodName = "defineMessages" | "formatMessage";
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
-// tslint:disable-next-line:no-any
-function isMessage(obj: any): obj is Message {
-  return obj.id && obj.defaultMessage;
+function validMessage(obj: StringMap): obj is Message {
+  return !!(obj.id && obj.defaultMessage);
 }
 
-function newMap() {
+function newMap(): StringMap {
   return Object.create(null);
 }
 
@@ -49,7 +52,10 @@ function extractMessagesForDefineMessages(
       p.initializer.properties
     ) {
       p.initializer.properties.forEach((ip) => {
-        if (ts.isIdentifier(ip.name) || ts.isLiteralExpression(ip.name)) {
+        if (
+          ip.name &&
+          (ts.isIdentifier(ip.name) || ts.isLiteralExpression(ip.name))
+        ) {
           const name = ip.name.text;
           if (
             ts.isPropertyAssignment(ip) &&
@@ -57,9 +63,10 @@ function extractMessagesForDefineMessages(
           ) {
             message[name] = ip.initializer.text;
           }
+          // else: key/value is not a string literal/identifier
         }
       });
-      if (isMessage(message)) {
+      if (validMessage(message)) {
         messages.push(message);
       }
     }
@@ -79,8 +86,9 @@ function extractMessagesForFormatMessage(
     ) {
       message[p.name.text] = p.initializer.text;
     }
+    // else: key/value is not a string literal/identifier
   });
-  if (isMessage(message)) {
+  if (validMessage(message)) {
     return [message];
   } else {
     return [];
@@ -92,7 +100,7 @@ function extractMessagesForNode(
   extractMessages: MessageExtracter,
 ): Message[] {
   const res: Message[] = [];
-  function find(n: ts.Node): Message[] {
+  function find(n: ts.Node): Message[] | undefined {
     if (ts.isObjectLiteralExpression(n)) {
       res.push(...extractMessages(n));
     } else {
@@ -125,7 +133,6 @@ function findJsxOpeningLikeElementsWithName(
       // Does the tag name match what we're looking for?
       const childTagName = n.tagName;
       if (childTagName.text === tagName) {
-        // node is a JsxOpeningLikeElement
         messages.push(n);
       }
     }
@@ -145,6 +152,7 @@ function findMethodCallsWithName(
   forAllVarDecls(sourceFile, (decl: ts.Declaration) => {
     if (isMethodCall(decl, methodName)) {
       if (
+        decl.initializer &&
         ts.isCallExpression(decl.initializer) &&
         decl.initializer.arguments.length
       ) {
@@ -159,13 +167,8 @@ function findMethodCallsWithName(
 
 /**
  * Parse tsx files
- * @export
- * @param {string} contents
- * @returns {array}
  */
-// TODO perhaps we should expose the Message interface
-// tslint:disable-next-line:array-type
-function main(contents: string): {}[] {
+function main(contents: string): Message[] {
   const sourceFile = ts.createSourceFile(
     "file.ts",
     contents,
@@ -183,6 +186,8 @@ function main(contents: string): {}[] {
     "defineMessages",
     extractMessagesForDefineMessages,
   );
+  // TODO formatMessage might not be the initializer for a VarDecl
+  // eg console.log(formatMessage(...))
   const fm = findMethodCallsWithName(
     sourceFile,
     "formatMessage",
@@ -193,7 +198,7 @@ function main(contents: string): {}[] {
   const jsxMessages = elements
     .map((element) => {
       const msg = newMap();
-      element.attributes &&
+      if (element.attributes) {
         element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
           // found nothing
           // tslint:disable-next-line:no-any
@@ -204,7 +209,8 @@ function main(contents: string): {}[] {
           msg[a.name.text] =
             a.initializer.text || a.initializer.expression.text;
         });
-      return isMessage(msg) ? msg : null;
+      }
+      return validMessage(msg) ? msg : null;
     })
     .filter(notNull);
 
