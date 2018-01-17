@@ -23,31 +23,37 @@ export interface Message {
   id: string;
 }
 
-interface StringMap {
-  [key: string]: string | undefined;
+// a Message with nullable fields, still under construction
+export interface PartialMessage {
+  defaultMessage?: string;
+  description?: string;
+  id?: string;
 }
 
+// This is the only JSX element we can extract messages from:
 type ElementName = "FormattedMessage";
+// These are the two methods we can extract messages from:
 type MethodName = "defineMessages" | "formatMessage";
+// MessageExtracter defines a function type which can extract zero or more
+// valid Messages from an ObjectLiteralExpression:
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
-function toMessage(obj: StringMap): Message | null {
-  if (obj.id && obj.defaultMessage) {
-    const res = {
-      defaultMessage: obj.defaultMessage,
-      id: obj.id,
-    } as Message;
-    if (obj.description) {
-      res.description = obj.description;
-    }
-    return res;
-  } else {
-    return null;
+// sets `target[key] = value`, but only if it is a legal Message key
+function copyIfMessageKey(target: PartialMessage, key: string, value: string) {
+  switch (key) {
+    case "defaultMessage":
+    case "description":
+    case "id":
+      target[key] = value;
+      break;
+    default:
+      break;
   }
 }
 
-function newMap(): StringMap {
-  return Object.create(null);
+// are the required keys of a valid Message present?
+function isValidMessage(obj: PartialMessage): obj is Message {
+  return "id" in obj && "defaultMessage" in obj;
 }
 
 function extractMessagesForDefineMessages(
@@ -55,7 +61,7 @@ function extractMessagesForDefineMessages(
 ): Message[] {
   const messages: Message[] = [];
   objLiteral.properties.forEach((p) => {
-    const map = newMap();
+    const msg: PartialMessage = {};
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
@@ -71,15 +77,12 @@ function extractMessagesForDefineMessages(
             ts.isPropertyAssignment(ip) &&
             ts.isStringLiteral(ip.initializer)
           ) {
-            map[name] = ip.initializer.text;
+            copyIfMessageKey(msg, name, ip.initializer.text);
           }
           // else: key/value is not a string literal/identifier
         }
       });
-      const msg = toMessage(map);
-      if (msg) {
-        messages.push(msg);
-      }
+      isValidMessage(msg) && messages.push(msg);
     }
   });
   return messages;
@@ -88,23 +91,18 @@ function extractMessagesForDefineMessages(
 function extractMessagesForFormatMessage(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
-  const map = newMap();
+  const msg: PartialMessage = {};
   objLiteral.properties.forEach((p) => {
     if (
       ts.isPropertyAssignment(p) &&
       (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
       ts.isStringLiteral(p.initializer)
     ) {
-      map[p.name.text] = p.initializer.text;
+      copyIfMessageKey(msg, p.name.text, p.initializer.text);
     }
     // else: key/value is not a string literal/identifier
   });
-  const msg = toMessage(map);
-  if (msg) {
-    return [msg];
-  } else {
-    return [];
-  }
+  return isValidMessage(msg) ? [msg] : [];
 }
 
 function extractMessagesForNode(
@@ -115,6 +113,7 @@ function extractMessagesForNode(
   function find(n: ts.Node): Message[] | undefined {
     if (ts.isObjectLiteralExpression(n)) {
       res.push(...extractMessages(n));
+      return undefined;
     } else {
       return ts.forEachChild(n, find);
     }
@@ -160,7 +159,6 @@ function findMethodCallsWithName(
   extractMessages: MessageExtracter,
 ) {
   let messages: Message[] = [];
-  // getNamedDeclarations is not currently public
   forAllVarDecls(sourceFile, (decl: ts.Declaration) => {
     if (isMethodCall(decl, methodName)) {
       if (
@@ -209,7 +207,7 @@ function main(contents: string): Message[] {
   // convert JsxOpeningLikeElements to Message maps
   const jsxMessages = elements
     .map((element) => {
-      const msg = newMap();
+      const msg: PartialMessage = {};
       if (element.attributes) {
         element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
           // found nothing
@@ -218,11 +216,14 @@ function main(contents: string): Message[] {
           if (!a.name || !a.initializer) {
             return;
           }
-          msg[a.name.text] =
-            a.initializer.text || a.initializer.expression.text;
+          copyIfMessageKey(
+            msg,
+            a.name.text,
+            a.initializer.text || a.initializer.expression.text,
+          );
         });
       }
-      return toMessage(msg);
+      return isValidMessage(msg) ? msg : null;
     })
     .filter(notNull);
 

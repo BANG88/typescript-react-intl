@@ -7,7 +7,8 @@
     "jsRules": {},
     "rules": {
         "no-any": true,
-        "interface-name": [true, "never-prefix"]
+        "interface-name": [true, "never-prefix"],
+        "no-unused-expression": [true, "allow-fast-null-checks"]
     },
     "rulesDirectory": []
 }
