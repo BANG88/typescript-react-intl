@@ -10,6 +10,7 @@
     "target": "es5",
     "declaration": true,
     "noImplicitAny": true,
+    "removeComments": true,
     "strictNullChecks": true,
     "rootDir": "."
   },

@@ -14,48 +14,32 @@ function isMethodCall(
   );
 }
 
-/**
- * Represents a react-intl message descriptor
- */
-export interface Message {
-  defaultMessage: string;
-  description?: string;
-  id: string;
+// Should be pretty fast: https://stackoverflow.com/a/34491287/14379
+// tslint:disable-next-line:no-any
+function emptyObject(obj: any) {
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+  return true;
 }
 
-interface StringMap {
-  [key: string]: string | undefined;
+// just a map of string to string
+interface Message {
+  [key: string]: string;
 }
 
 type ElementName = "FormattedMessage";
 type MethodName = "defineMessages" | "formatMessage";
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
-function toMessage(obj: StringMap): Message | null {
-  if (obj.id && obj.defaultMessage) {
-    const res = {
-      defaultMessage: obj.defaultMessage,
-      id: obj.id,
-    } as Message;
-    if (obj.description) {
-      res.description = obj.description;
-    }
-    return res;
-  } else {
-    return null;
-  }
-}
-
-function newMap(): StringMap {
-  return Object.create(null);
-}
-
 function extractMessagesForDefineMessages(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
   const messages: Message[] = [];
   objLiteral.properties.forEach((p) => {
-    const map = newMap();
+    const message: Message = {};
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
@@ -71,15 +55,12 @@ function extractMessagesForDefineMessages(
             ts.isPropertyAssignment(ip) &&
             ts.isStringLiteral(ip.initializer)
           ) {
-            map[name] = ip.initializer.text;
+            message[name] = ip.initializer.text;
           }
           // else: key/value is not a string literal/identifier
         }
       });
-      const msg = toMessage(map);
-      if (msg) {
-        messages.push(msg);
-      }
+      messages.push(message);
     }
   });
   return messages;
@@ -88,23 +69,18 @@ function extractMessagesForDefineMessages(
 function extractMessagesForFormatMessage(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
-  const map = newMap();
+  const message: Message = {};
   objLiteral.properties.forEach((p) => {
     if (
       ts.isPropertyAssignment(p) &&
       (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
       ts.isStringLiteral(p.initializer)
     ) {
-      map[p.name.text] = p.initializer.text;
+      message[p.name.text] = p.initializer.text;
     }
     // else: key/value is not a string literal/identifier
   });
-  const msg = toMessage(map);
-  if (msg) {
-    return [msg];
-  } else {
-    return [];
-  }
+  return [message];
 }
 
 function extractMessagesForNode(
@@ -115,6 +91,7 @@ function extractMessagesForNode(
   function find(n: ts.Node): Message[] | undefined {
     if (ts.isObjectLiteralExpression(n)) {
       res.push(...extractMessages(n));
+      return undefined;
     } else {
       return ts.forEachChild(n, find);
     }
@@ -180,7 +157,9 @@ function findMethodCallsWithName(
 /**
  * Parse tsx files
  */
-function main(contents: string): Message[] {
+// TODO perhaps we should expose the Message interface
+// tslint:disable-next-line:array-type
+function main(contents: string): {}[] {
   const sourceFile = ts.createSourceFile(
     "file.ts",
     contents,
@@ -209,8 +188,8 @@ function main(contents: string): Message[] {
   // convert JsxOpeningLikeElements to Message maps
   const jsxMessages = elements
     .map((element) => {
-      const msg = newMap();
-      if (element.attributes) {
+      const msg: Message = {};
+      element.attributes &&
         element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
           // found nothing
           // tslint:disable-next-line:no-any
@@ -221,16 +200,11 @@ function main(contents: string): Message[] {
           msg[a.name.text] =
             a.initializer.text || a.initializer.expression.text;
         });
-      }
-      return toMessage(msg);
+      return msg;
     })
-    .filter(notNull);
+    .filter((r) => !emptyObject(r));
 
   return jsxMessages.concat(dm).concat(fm);
-}
-
-function notNull<T>(value: T | null): value is T {
-  return value !== null;
 }
 
 export default main;

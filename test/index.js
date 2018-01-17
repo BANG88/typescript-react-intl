@@ -53,8 +53,7 @@ test("defineMessages() should only work with variable declaration", t => {
     },
     {
       id: "app.title",
-      defaultMessage: "Hello",
-      description: "A description for title"
+      defaultMessage: "Hello"
     }
   ];
 
