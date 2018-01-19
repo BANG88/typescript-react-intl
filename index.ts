@@ -207,17 +207,28 @@ function main(contents: string): Message[] {
       const msg: Partial<Message> = {};
       if (element.attributes) {
         element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
-          // found nothing
-          // tslint:disable-next-line:no-any
-          const a = attr as any; // TODO find correct types to avoid "any"
-          if (!a.name || !a.initializer) {
+          if (!ts.isJsxAttribute(attr) || !attr.initializer) {
+            // Either JsxSpreadAttribute, or JsxAttribute without initializer.
             return;
           }
-          copyIfMessageKey(
-            msg,
-            a.name.text,
-            a.initializer.text || a.initializer.expression.text,
-          );
+          const key = attr.name.text;
+          const init = attr.initializer;
+          let text;
+          if (ts.isStringLiteral(init)) {
+            text = init.text;
+          } else if (ts.isJsxExpression(init)) {
+            if (init.expression && ts.isStringLiteral(init.expression)) {
+              text = init.expression.text;
+            } else {
+              // Either the JsxExpression has no expression (?)
+              // or a non-StringLiteral expression.
+              return;
+            }
+          } else {
+            // Should be a StringLiteral or JsxExpression, but it's not!
+            return;
+          }
+          copyIfMessageKey(msg, key, text);
         });
       }
       return isValidMessage(msg) ? msg : null;
