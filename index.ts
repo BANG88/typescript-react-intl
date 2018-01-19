@@ -14,32 +14,51 @@ function isMethodCall(
   );
 }
 
-// Should be pretty fast: https://stackoverflow.com/a/34491287/14379
-// tslint:disable-next-line:no-any
-function emptyObject(obj: any) {
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      return false;
-    }
-  }
-  return true;
+/**
+ * Represents a react-intl message descriptor
+ */
+export interface Message {
+  defaultMessage: string;
+  description?: string;
+  id: string;
 }
 
-// just a map of string to string
-interface Message {
-  [key: string]: string;
-}
-
+// This is the only JSX element we can extract messages from:
 type ElementName = "FormattedMessage";
+// These are the two methods we can extract messages from:
 type MethodName = "defineMessages" | "formatMessage";
+// MessageExtracter defines a function type which can extract zero or more
+// valid Messages from an ObjectLiteralExpression:
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
+
+// sets `target[key] = value`, but only if it is a legal Message key
+function copyIfMessageKey(
+  target: Partial<Message>,
+  key: string,
+  value: string,
+) {
+  switch (key) {
+    case "defaultMessage":
+    case "description":
+    case "id":
+      target[key] = value;
+      break;
+    default:
+      break;
+  }
+}
+
+// are the required keys of a valid Message present?
+function isValidMessage(obj: Partial<Message>): obj is Message {
+  return "id" in obj && "defaultMessage" in obj;
+}
 
 function extractMessagesForDefineMessages(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
   const messages: Message[] = [];
   objLiteral.properties.forEach((p) => {
-    const message: Message = {};
+    const msg: Partial<Message> = {};
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
@@ -55,12 +74,12 @@ function extractMessagesForDefineMessages(
             ts.isPropertyAssignment(ip) &&
             ts.isStringLiteral(ip.initializer)
           ) {
-            message[name] = ip.initializer.text;
+            copyIfMessageKey(msg, name, ip.initializer.text);
           }
           // else: key/value is not a string literal/identifier
         }
       });
-      messages.push(message);
+      isValidMessage(msg) && messages.push(msg);
     }
   });
   return messages;
@@ -69,18 +88,18 @@ function extractMessagesForDefineMessages(
 function extractMessagesForFormatMessage(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
-  const message: Message = {};
+  const msg: Partial<Message> = {};
   objLiteral.properties.forEach((p) => {
     if (
       ts.isPropertyAssignment(p) &&
       (ts.isIdentifier(p.name) || ts.isLiteralExpression(p.name)) &&
       ts.isStringLiteral(p.initializer)
     ) {
-      message[p.name.text] = p.initializer.text;
+      copyIfMessageKey(msg, p.name.text, p.initializer.text);
     }
     // else: key/value is not a string literal/identifier
   });
-  return [message];
+  return isValidMessage(msg) ? [msg] : [];
 }
 
 function extractMessagesForNode(
@@ -137,7 +156,6 @@ function findMethodCallsWithName(
   extractMessages: MessageExtracter,
 ) {
   let messages: Message[] = [];
-  // getNamedDeclarations is not currently public
   forAllVarDecls(sourceFile, (decl: ts.Declaration) => {
     if (isMethodCall(decl, methodName)) {
       if (
@@ -157,9 +175,7 @@ function findMethodCallsWithName(
 /**
  * Parse tsx files
  */
-// TODO perhaps we should expose the Message interface
-// tslint:disable-next-line:array-type
-function main(contents: string): {}[] {
+function main(contents: string): Message[] {
   const sourceFile = ts.createSourceFile(
     "file.ts",
     contents,
@@ -188,8 +204,8 @@ function main(contents: string): {}[] {
   // convert JsxOpeningLikeElements to Message maps
   const jsxMessages = elements
     .map((element) => {
-      const msg: Message = {};
-      element.attributes &&
+      const msg: Partial<Message> = {};
+      if (element.attributes) {
         element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
           // found nothing
           // tslint:disable-next-line:no-any
@@ -197,14 +213,22 @@ function main(contents: string): {}[] {
           if (!a.name || !a.initializer) {
             return;
           }
-          msg[a.name.text] =
-            a.initializer.text || a.initializer.expression.text;
+          copyIfMessageKey(
+            msg,
+            a.name.text,
+            a.initializer.text || a.initializer.expression.text,
+          );
         });
-      return msg;
+      }
+      return isValidMessage(msg) ? msg : null;
     })
-    .filter((r) => !emptyObject(r));
+    .filter(notNull);
 
   return jsxMessages.concat(dm).concat(fm);
+}
+
+function notNull<T>(value: T | null): value is T {
+  return value !== null;
 }
 
 export default main;
