@@ -6,11 +6,6 @@ export interface Message {
     description?: string;
     id: string;
 }
-export interface PartialMessage {
-    defaultMessage?: string;
-    description?: string;
-    id?: string;
-}
 /**
  * Parse tsx files
  */

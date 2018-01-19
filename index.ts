@@ -24,7 +24,7 @@ export interface Message {
 }
 
 // a Message with nullable fields, still under construction
-export interface PartialMessage {
+interface PartialMessage {
   defaultMessage?: string;
   description?: string;
   id?: string;
