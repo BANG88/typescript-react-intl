@@ -7,7 +7,6 @@
     "jsRules": {},
     "rules": {
         "no-any": true,
-        // TODO perhaps we *should* use the 'I' prefix?
         "interface-name": [true, "never-prefix"],
         "no-unused-expression": [true, "allow-fast-null-checks"]
     },
