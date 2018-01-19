@@ -23,13 +23,6 @@ export interface Message {
   id: string;
 }
 
-// a Message with nullable fields, still under construction
-interface PartialMessage {
-  defaultMessage?: string;
-  description?: string;
-  id?: string;
-}
-
 // This is the only JSX element we can extract messages from:
 type ElementName = "FormattedMessage";
 // These are the two methods we can extract messages from:
@@ -39,7 +32,11 @@ type MethodName = "defineMessages" | "formatMessage";
 type MessageExtracter = (obj: ts.ObjectLiteralExpression) => Message[];
 
 // sets `target[key] = value`, but only if it is a legal Message key
-function copyIfMessageKey(target: PartialMessage, key: string, value: string) {
+function copyIfMessageKey(
+  target: Partial<Message>,
+  key: string,
+  value: string,
+) {
   switch (key) {
     case "defaultMessage":
     case "description":
@@ -52,7 +49,7 @@ function copyIfMessageKey(target: PartialMessage, key: string, value: string) {
 }
 
 // are the required keys of a valid Message present?
-function isValidMessage(obj: PartialMessage): obj is Message {
+function isValidMessage(obj: Partial<Message>): obj is Message {
   return "id" in obj && "defaultMessage" in obj;
 }
 
@@ -61,7 +58,7 @@ function extractMessagesForDefineMessages(
 ): Message[] {
   const messages: Message[] = [];
   objLiteral.properties.forEach((p) => {
-    const msg: PartialMessage = {};
+    const msg: Partial<Message> = {};
     if (
       ts.isPropertyAssignment(p) &&
       ts.isObjectLiteralExpression(p.initializer) &&
@@ -91,7 +88,7 @@ function extractMessagesForDefineMessages(
 function extractMessagesForFormatMessage(
   objLiteral: ts.ObjectLiteralExpression,
 ): Message[] {
-  const msg: PartialMessage = {};
+  const msg: Partial<Message> = {};
   objLiteral.properties.forEach((p) => {
     if (
       ts.isPropertyAssignment(p) &&
@@ -207,7 +204,7 @@ function main(contents: string): Message[] {
   // convert JsxOpeningLikeElements to Message maps
   const jsxMessages = elements
     .map((element) => {
-      const msg: PartialMessage = {};
+      const msg: Partial<Message> = {};
       if (element.attributes) {
         element.attributes.properties.forEach((attr: ts.JsxAttributeLike) => {
           // found nothing
