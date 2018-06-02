@@ -217,7 +217,11 @@ function main(contents: string): Message[] {
           if (ts.isStringLiteral(init)) {
             text = init.text;
           } else if (ts.isJsxExpression(init)) {
-            if (init.expression && ts.isStringLiteral(init.expression)) {
+            if (
+              init.expression &&
+              (ts.isStringLiteral(init.expression) ||
+                ts.isNoSubstitutionTemplateLiteral(init.expression))
+            ) {
               text = init.expression.text;
             } else {
               // Either the JsxExpression has no expression (?)
