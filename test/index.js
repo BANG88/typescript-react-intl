@@ -8,7 +8,7 @@ test("<FormattedMessage/>", (t) => {
   var content = fs.readFileSync(__dirname + "/app/index.tsx");
 
   var res = p(content.toString());
-  console.log(res);
+
   var expected = [
     {
       id: "app",
@@ -61,9 +61,13 @@ test("defineMessages() should only work with variable declaration", (t) => {
       defaultMessage: "Hello",
       description: "A description for title",
     },
+    {
+      id: "hello.world",
+      defaultMessage: "Hello, {scope, plural,\n        =person {human}\n        =planet {world}\n        other {thing}\n      }!",
+    }
   ];
 
-  t.is(res.length, 2);
+  t.is(res.length, 3);
 
   t.deepEqual(res, expected);
 });
