@@ -2,7 +2,7 @@
  * Represents a react-intl message descriptor
  */
 export interface Message {
-    defaultMessage: string;
+    defaultMessage?: string;
     description?: string;
     id: string;
 }

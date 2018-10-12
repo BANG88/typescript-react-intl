@@ -18,7 +18,7 @@ function isMethodCall(
  * Represents a react-intl message descriptor
  */
 export interface Message {
-  defaultMessage: string;
+  defaultMessage?: string;
   description?: string;
   id: string;
 }
@@ -50,7 +50,7 @@ function copyIfMessageKey(
 
 // are the required keys of a valid Message present?
 function isValidMessage(obj: Partial<Message>): obj is Message {
-  return "id" in obj && "defaultMessage" in obj;
+  return "id" in obj;
 }
 
 function extractMessagesForDefineMessages(
