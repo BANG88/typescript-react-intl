@@ -1,11 +1,15 @@
 import React from "react";
 import { FormattedMessage } from "react-intl";
+import { AnotherText } from "./anotherText";
 import messages from "./defineMessages";
+import { MyComponent } from "./myComponent";
 
 export class App extends React.Component<any, any> {
   render() {
     return (
       <div>
+        <MyComponent id='my.component' defaultMessage='my messages'/>
+        <AnotherText id='another.text' defaultMessage='another messages'/>
         <FormattedMessage id="app" defaultMessage="the defualt message" />
         <FormattedMessage {...messages.intro} />
         <FormattedMessage id="expr" defaultMessage={"a jsx expression"} />

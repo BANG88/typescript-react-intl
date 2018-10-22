@@ -24,7 +24,7 @@ export interface Message {
 }
 
 // This is the only JSX element we can extract messages from:
-type ElementName = "FormattedMessage";
+type ElementName = "FormattedMessage" | string;
 // These are the two methods we can extract messages from:
 type MethodName = "defineMessages" | "formatMessage";
 // MessageExtracter defines a function type which can extract zero or more
@@ -171,11 +171,16 @@ function findMethodCallsWithName(
   });
   return messages;
 }
-
+export interface Options {
+  tagNames: string[];
+}
 /**
  * Parse tsx files
  */
-function main(contents: string): Message[] {
+function main(
+  contents: string,
+  options: Options = { tagNames: [] },
+): Message[] {
   const sourceFile = ts.createSourceFile(
     "file.ts",
     contents,
@@ -184,15 +189,12 @@ function main(contents: string): Message[] {
     ts.ScriptKind.TSX,
   );
 
-  const elements = findJsxOpeningLikeElementsWithName(
-    sourceFile,
-    "FormattedMessage",
-  );
   const dm = findMethodCallsWithName(
     sourceFile,
     "defineMessages",
     extractMessagesForDefineMessages,
   );
+
   // TODO formatMessage might not be the initializer for a VarDecl
   // eg console.log(formatMessage(...))
   const fm = findMethodCallsWithName(
@@ -200,9 +202,25 @@ function main(contents: string): Message[] {
     "formatMessage",
     extractMessagesForFormatMessage,
   );
+  const results: Message[] = [];
 
-  // convert JsxOpeningLikeElements to Message maps
-  const jsxMessages = elements
+  const tagNames = ["FormattedMessage"].concat(options.tagNames);
+  tagNames.forEach((tagName) => {
+    const elements = findJsxOpeningLikeElementsWithName(sourceFile, tagName);
+    // convert JsxOpeningLikeElements to Message maps
+    const jsxMessages = getElementsMessages(elements);
+    results.push(...jsxMessages);
+  });
+
+  return results.concat(dm).concat(fm);
+}
+
+/**
+ * convert JsxOpeningLikeElements to Message maps
+ * @param elements
+ */
+function getElementsMessages(elements: ts.JsxOpeningLikeElement[]) {
+  return elements
     .map((element) => {
       const msg: Partial<Message> = {};
       if (element.attributes) {
@@ -238,8 +256,6 @@ function main(contents: string): Message[] {
       return isValidMessage(msg) ? msg : null;
     })
     .filter(notNull);
-
-  return jsxMessages.concat(dm).concat(fm);
 }
 
 function notNull<T>(value: T | null): value is T {

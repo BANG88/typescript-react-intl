@@ -6,8 +6,11 @@ export interface Message {
     description?: string;
     id: string;
 }
+export interface Options {
+    tagNames: string[];
+}
 /**
  * Parse tsx files
  */
-declare function main(contents: string): Message[];
+declare function main(contents: string, options?: Options): Message[];
 export default main;

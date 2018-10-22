@@ -7,7 +7,7 @@ var fs = require("fs");
 test("<FormattedMessage/>", (t) => {
   var content = fs.readFileSync(__dirname + "/app/index.tsx");
 
-  var res = p(content.toString());
+  var res = p(content.toString(), { tagNames: ["MyComponent", "AnotherText"] });
   console.log(res);
   var expected = [
     {
@@ -23,13 +23,11 @@ test("<FormattedMessage/>", (t) => {
       defaultMessage:
         "The installer has detected {numDrives, number} {numDrives, plural,\n      one {drive}\n      other {drives}\n    } and determined {numDrives, plural,\n      one {its}\n      other {their}\n    } best configuration.\n    If this is not the intended use of {numDrives, plural,\n      one {this drive}\n      other {these drives}\n    }, please change the configuration to your preferences.",
     },
-    // {
-    //   id: "concat",
-    //   defaultMessage: "concatenated strings"
-    // }
+    { id: "my.component", defaultMessage: "my messages" },
+    { id: 'another.text', defaultMessage: 'another messages' }
   ];
 
-  t.is(res.length, 3);
+  t.is(res.length, 5);
 
   t.deepEqual(res, expected);
 });
