@@ -1,6 +1,6 @@
 # typescript-react-intl
 
-Extracts string messages from TypeScript React components or ts files that use React Intl.
+Extracts string messages from TypeScript React components or ts files that use React Intl. You can use it in `React Native` too. 
 
 [![Build Status](https://travis-ci.org/bang88/typescript-react-intl.svg?branch=master)](https://travis-ci.org/bang88/typescript-react-intl)
 
