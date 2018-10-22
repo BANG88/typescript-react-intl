@@ -72,7 +72,8 @@ function extractMessagesForDefineMessages(
           const name = ip.name.text;
           if (
             ts.isPropertyAssignment(ip) &&
-            ts.isStringLiteral(ip.initializer)
+            (ts.isStringLiteral(ip.initializer) ||
+              ts.isNoSubstitutionTemplateLiteral(ip.initializer))
           ) {
             copyIfMessageKey(msg, name, ip.initializer.text);
           }

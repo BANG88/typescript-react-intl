@@ -10,6 +10,14 @@ const lang = defineMessages({
         "defaultMessage": "Hello",
         "description": "A description for title"
     },
+    multiLineLiteral: {
+      id: 'hello.world',
+      defaultMessage: `Hello, {scope, plural,
+        =person {human}
+        =planet {world}
+        other {thing}
+      }!`
+    }
 })
 
 // NB not a variable declaration; should be ignored
