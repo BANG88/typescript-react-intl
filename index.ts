@@ -23,7 +23,8 @@ function isExportMethodCall(
     !!el.expression &&
     ts.isCallExpression(el.expression) &&
     !!el.expression.expression &&
-    el.expression.expression.escapedText === methodName
+    ts.isIdentifier(el.expression.expression) &&
+    el.expression.expression.text === methodName
   );
 }
 
@@ -135,7 +136,7 @@ function extractMessagesForNode(
 
 function forAllVarDecls(
   node: ts.Node,
-  cb: (decl: ts.VariableDeclaration) => void,
+  cb: (decl: ts.VariableDeclaration | ts.ExportAssignment) => void,
 ) {
   if (ts.isVariableDeclaration(node) || ts.isExportAssignment(node)) {
     cb(node);
@@ -171,7 +172,7 @@ function findMethodCallsWithName(
 ) {
   let messages: Message[] = [];
   forAllVarDecls(sourceFile, (decl: ts.Declaration) => {
-    if (isMethodCall(decl, methodName) || isExportMethodCall(decl, methodName)) {
+    if (isMethodCall(decl, methodName)) {
       if (
         decl.initializer &&
         ts.isCallExpression(decl.initializer) &&
@@ -180,7 +181,9 @@ function findMethodCallsWithName(
         const nodeProps = decl.initializer.arguments[0];
         const declMessages = extractMessagesForNode(nodeProps, extractMessages);
         messages = messages.concat(declMessages);
-      } else if (
+      }
+    } else if (isExportMethodCall(decl, methodName)) {
+      if (
         decl.expression &&
         ts.isCallExpression(decl.expression) &&
         decl.expression.arguments.length
