@@ -6,13 +6,13 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build": "npm run format:auto && tsc && npm run _test",
+    "build": "yarn run format:auto && tsc && yarn run _test",
     "build-ci": "tsc && yarn run format:check && yarn run _test",
     "format:auto": "prettier --config .prettierrc *.ts --write",
     "format:check": "prettier --config .prettierrc *.ts --list-different",
     "start": "tsc -w",
     "test":
-      "tsc && npm run _test && echo Please run 'npm build' before you commit",
+      "tsc && yarn run _test && echo Please run 'yarn build' before you commit",
     "_test": "tslint -c tslint.json '*.ts' && ava --verbose"
   },
   "repository": {
