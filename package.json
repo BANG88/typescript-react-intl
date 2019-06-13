@@ -1,8 +1,7 @@
 {
   "name": "typescript-react-intl",
   "version": "0.3.0",
-  "description":
-    "Extracts string messages from TypeScript React components or ts files that use React Intl.",
+  "description": "Extracts string messages from TypeScript React components or ts files that use React Intl.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -11,16 +10,19 @@
     "format:auto": "prettier --config .prettierrc *.ts --write",
     "format:check": "prettier --config .prettierrc *.ts --list-different",
     "start": "tsc -w",
-    "test":
-      "tsc && yarn run _test && echo Please run 'yarn build' before you commit",
+    "test": "tsc && yarn run _test && echo Please run 'yarn build' before you commit",
     "_test": "tslint -c tslint.json '*.ts' && ava --verbose"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bang88/typescript-react-intl.git"
   },
-  "files": ["lib"],
-  "keywords": ["react intl typescript"],
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "react intl typescript"
+  ],
   "author": "bang88",
   "license": "MIT",
   "bugs": {
