@@ -70,6 +70,32 @@ test("defineMessages() should only work with variable declaration", (t) => {
   t.deepEqual(res, expected);
 });
 
+test("defineMessages() should with export default", (t) => {
+  var content = fs.readFileSync(__dirname + "/app/defineMessagesExportDefault.ts");
+
+  var res = p(content.toString());
+
+  var expected = [
+    {
+      id: "intro.hello",
+      defaultMessage: "Hello world",
+    },
+    {
+      id: "app.title",
+      defaultMessage: "Hello",
+      description: "A description for title",
+    },
+    {
+      id: "hello.world",
+      defaultMessage: "Hello, {scope, plural,\n        =person {human}\n        =planet {world}\n        other {thing}\n      }!",
+    }
+  ];
+
+  t.is(res.length, 3);
+
+  t.deepEqual(res, expected);
+});
+
 test("<FormattedMessage/> should work with StatelessComponent", (t) => {
   var content = fs.readFileSync(__dirname + "/app/statelessComponent.tsx");
 

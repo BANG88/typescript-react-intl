@@ -14,6 +14,20 @@ function isMethodCall(
   );
 }
 
+function isExportMethodCall(
+  el: ts.Declaration,
+  methodName: string,
+): el is ts.ExportAssignment {
+  return (
+    ts.isExportAssignment(el) &&
+    !!el.expression &&
+    ts.isCallExpression(el.expression) &&
+    !!el.expression.expression &&
+    ts.isIdentifier(el.expression.expression) &&
+    el.expression.expression.text === methodName
+  );
+}
+
 /**
  * Represents a react-intl message descriptor
  */
@@ -122,9 +136,9 @@ function extractMessagesForNode(
 
 function forAllVarDecls(
   node: ts.Node,
-  cb: (decl: ts.VariableDeclaration) => void,
+  cb: (decl: ts.VariableDeclaration | ts.ExportAssignment) => void,
 ) {
-  if (ts.isVariableDeclaration(node)) {
+  if (ts.isVariableDeclaration(node) || ts.isExportAssignment(node)) {
     cb(node);
   } else {
     ts.forEachChild(node, (n) => forAllVarDecls(n, cb));
@@ -165,6 +179,16 @@ function findMethodCallsWithName(
         decl.initializer.arguments.length
       ) {
         const nodeProps = decl.initializer.arguments[0];
+        const declMessages = extractMessagesForNode(nodeProps, extractMessages);
+        messages = messages.concat(declMessages);
+      }
+    } else if (isExportMethodCall(decl, methodName)) {
+      if (
+        decl.expression &&
+        ts.isCallExpression(decl.expression) &&
+        decl.expression.arguments.length
+      ) {
+        const nodeProps = decl.expression.arguments[0];
         const declMessages = extractMessagesForNode(nodeProps, extractMessages);
         messages = messages.concat(declMessages);
       }
